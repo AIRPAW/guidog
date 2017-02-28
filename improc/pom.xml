@@ -24,7 +24,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.test.restmvcapplication.Application</mainClass>
+                            <mainClass>ru.scorpds.guidog.Application</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -33,7 +33,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.test.restmvcapplication.Application</mainClass>
+                    <mainClass>ru.scorpds.guidog.Application</mainClass>
                 </configuration>
                 <executions>
                     <execution>
