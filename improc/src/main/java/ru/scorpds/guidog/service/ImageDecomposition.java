@@ -28,9 +28,9 @@ public class ImageDecomposition {
     static final short WHITE = 255, BLACK = 0;
 
     public static HashMap detectObjects(IplImage srcImage, IplImage transformed) {
-        CanvasFrame canvas_bin = new CanvasFrame("Transformed");
-        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-        canvas_bin.showImage(converter.convert(srcImage));
+//        CanvasFrame canvas_bin = new CanvasFrame("Transformed");
+//        OpenCVFrameCConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+//        canvas_bin.showImage(converter.convert(srcImage));
 
         IplImage resultImage = cvCreateImage(srcImage.cvSize(), IPL_DEPTH_8U, 3);
         cvCvtColor(srcImage, resultImage, CV_GRAY2BGR);
@@ -114,9 +114,9 @@ public class ImageDecomposition {
             coordinates.put(i, p);
             i++;
         }
-        for (Integer key : coordinates.keySet()) {
-            System.out.println("Image: " + key + ".jpg, Coordinates of center: " + ((Point) coordinates.get(key)).x+ ", " + ((Point) coordinates.get(key)).y);
-        }
+//        for (Integer key : coordinates.keySet()) {
+//            System.out.println("Image: " + key + ".jpg, Coordinates of center: " + ((Point) coordinates.get(key)).x+ ", " + ((Point) coordinates.get(key)).y);
+//        }
 //        final CanvasFrame canvas = new CanvasFrame("Demo");
 //
 //        /* показываем картинку в нашем фрейме */
@@ -140,9 +140,9 @@ public class ImageDecomposition {
         IplImage image = cvLoadImage(path, CV_LOAD_IMAGE_GRAYSCALE);
         Mat mat = new Mat(image);
 
-        final CanvasFrame canvas_bin = new CanvasFrame("Bin");
-        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-        canvas_bin.showImage(converter.convert(image));
+//        final CanvasFrame canvas_bin = new CanvasFrame("Bin");
+//        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+//        canvas_bin.showImage(converter.convert(image));
 
         IplImage dst = new IplImage(morphologicalTransformation(mat));
         

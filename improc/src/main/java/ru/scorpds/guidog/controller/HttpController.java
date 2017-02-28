@@ -62,9 +62,11 @@ public class HttpController {
                     if (elem.getFitness() > maxFit) {
                         maxFit = elem.getFitness();
                         fit = elem;
+                        System.out.println("New fit found!");
                     }
                 }
             }
+            System.out.println(fit);
             response = Json.createObjectBuilder()
                     .add("point",
                             Json.createObjectBuilder()
@@ -82,7 +84,6 @@ public class HttpController {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         return new ResponseEntity<>(response.toString(), HttpStatus.CREATED);
     }
 
