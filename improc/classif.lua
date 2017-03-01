@@ -1,8 +1,6 @@
 
 -- нужно запустить с именем картинки из папки test_path
 
-package.path = "/home/sbt-ulyanov-ka/torch/install/share/lua/5.1/?.lua;/home/sbt-ulyanov-ka/torch/install/share/lua/5.1/?/init.lua;./?.lua;~/torch/install/lib/luarocks/rocks"
-package.cpath = "/home/sbt-ulyanov-ka/torch/install/lib/lua/5.1/?.so;/home/sbt-ulyanov-ka/torch/install/lib/?.so;./?.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/loadall.so"
 require 'torch'
 require 'optim'
 require 'xlua'

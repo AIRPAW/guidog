@@ -1,6 +1,7 @@
+local lfs = require ("lfs")
 localPath         = {
 getLocalPath = function ()
-                  return '~/NetBeansProjects/guidog/improc/'
+                  return lfs.currentdir() .. "/"
                end
 }
 

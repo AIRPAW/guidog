@@ -19,9 +19,9 @@ import ru.scorpds.guidog.service.ImageDecomposition;
 public class Application {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        SpringApplicationBuilder b = new SpringApplicationBuilder(Application.class);
-        b.headless(false).properties("application.properties").run(args); 
-//            runMain();
+//        SpringApplicationBuilder b = new SpringApplicationBuilder(Application.class);
+//        b.headless(false).properties("application.properties").run(args); 
+            runMain();
     }
 
     public static void singlePicOCR() {
