@@ -18,12 +18,25 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Properties;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import ru.scorpds.guidog.Application;
 
 /**
  *
  * @author scorpds
  */
 public class ImageDecomposition {
+
+    private static final boolean WRITE_ON_DISK = Application.prop.getProperty("saveImagesOnDisk").equalsIgnoreCase("true");
 
     static final short WHITE = 255, BLACK = 0;
 
@@ -67,8 +80,10 @@ public class ImageDecomposition {
                     cvScalar(0, 255, 0, 0), 1, 0, 0);
 
             cvSetImageROI(srcImage, cvRect(boundbox.x(), boundbox.y(), boundbox.width(), boundbox.height()));
-
-            cvSaveImage("img/" + i + ".jpg", srcImage);
+            
+            if (WRITE_ON_DISK) {
+                cvSaveImage("img/" + i + ".jpg", srcImage);
+            }
 
             if (i != 0) {
                 Rect result_rec = new Rect(cvGetImageROI(srcImage));
@@ -103,9 +118,10 @@ public class ImageDecomposition {
                 int smallPictX = wDest / 2 - tmp.cols() / 2;
                 int smallPictY = hDest / 2 - tmp.rows() / 2;
                 tmp.copyTo(black.rowRange(smallPictY, (smallPictY + tmp.rows())).colRange(smallPictX, smallPictX + tmp.cols()));
-
-                imwrite("output/" + i + ".jpg", black);
-                cvResetImageROI(srcImage);                
+                if (WRITE_ON_DISK) {
+                    imwrite("output/" + i + ".jpg", black);
+                }
+                cvResetImageROI(srcImage);
             }
             int contourCenterX = boundbox.x() + boundbox.width() / 2;
             int contourCenterY = boundbox.y() + boundbox.height() / 2;
@@ -127,31 +143,56 @@ public class ImageDecomposition {
     private static Mat morphologicalTransformation(Mat source) {
         Mat result = new Mat();
         Mat grad = new Mat();
-        
-        Mat morphKernel = getStructuringElement(MORPH_ELLIPSE, new Size(2, 2));
-        morphologyEx(source, grad, MORPH_GRADIENT, morphKernel);
-        
-        morphKernel = getStructuringElement(MORPH_RECT, new Size(3, 1));
-        morphologyEx(grad, result, MORPH_CLOSE, morphKernel);
+
+//        Mat morphKernel = getStructuringElement(MORPH_ELLIPSE, new Size(3, 3));
+//        morphologyEx(source, grad, MORPH_GRADIENT, morphKernel);
+        Mat morphKernel = getStructuringElement(MORPH_ELLIPSE, new Size(5, 5));
+        morphologyEx(source, result, MORPH_CLOSE, morphKernel);
 
         return result;
     }
 
-    public static HashMap notMain(String path) {
+    public static HashMap notMain(BufferedImage screenshot) throws FileNotFoundException, IOException {
 
-        IplImage image = cvLoadImage(path, CV_LOAD_IMAGE_GRAYSCALE);
-        Mat mat = new Mat(image);
+        Java2DFrameConverter frameBufferedImageConverter = new Java2DFrameConverter();
+        Frame screenshotFrame = frameBufferedImageConverter.convert(screenshot);
 
-//        final CanvasFrame canvas_bin = new CanvasFrame("Bin");
-//        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-//        canvas_bin.showImage(converter.convert(image));
-        
+        OpenCVFrameConverter.ToIplImage conv = new OpenCVFrameConverter.ToIplImage();
+        IplImage cvImg = conv.convert(screenshotFrame);
 
-//        IplImage dst = new IplImage(morphologicalTransformation(mat));
-//        adaptiveThreshold(mat, mat, 254, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 5, 2);
+        cvImg = convToGray(cvImg);
+        Mat mat = new Mat(cvImg);
+
+        if (WRITE_ON_DISK) {
+            imwrite("recievedScreenshot.jpg", mat);
+        }
+
+        adaptiveThreshold(mat, mat, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 15, 2);
+
+        if (WRITE_ON_DISK) {
+            imwrite("thresholded.jpg", mat);
+        }
+
         IplImage thr = new IplImage(mat);
         thr = new IplImage(morphologicalTransformation(mat));
-        return detectObjects(image, thr);
+
+        if (WRITE_ON_DISK) {
+            imwrite("transformed.jpg", new Mat(thr));
+        }
+        return detectObjects(cvImg, thr);
+    }
+
+    public static IplImage convToGray(IplImage src) {
+        CvSize dim = new CvSize(src.width(), src.height());
+        IplImage dst = IplImage.create(dim, src.depth(), 1);
+        cvCvtColor(src, dst, CV_BGR2GRAY);
+        return dst;
+    }
+
+    public static void showImage(IplImage toShow, String windowTitle) {
+        final CanvasFrame canvas_bin = new CanvasFrame(windowTitle);
+        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+        canvas_bin.showImage(converter.convert(toShow));
     }
 
 }

@@ -47,7 +47,7 @@ public class HttpController {
             System.out.println("Saving initial image..");
             ImageIO.write(bImageFromConvert, "png", new File(imgPath));
 
-            HashMap<Integer, Point> coords = ImageDecomposition.notMain(imgPath);
+            HashMap<Integer, Point> coords = ImageDecomposition.notMain(bImageFromConvert);
 
             List<ElementCandidate> list = new ArrayList<>();
             for (Integer key : coords.keySet()) {

@@ -1,12 +1,16 @@
 package ru.scorpds.guidog;
 
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
+import javax.imageio.ImageIO;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import ru.scorpds.guidog.service.CharactersRecognition;
 import ru.scorpds.guidog.service.ImageDecomposition;
@@ -18,10 +22,13 @@ import ru.scorpds.guidog.service.ImageDecomposition;
 //@SpringBootApplication
 public class Application {
 
+    public static Properties prop = new Properties();
+
     public static void main(String[] args) throws IOException, InterruptedException {
 //        SpringApplicationBuilder b = new SpringApplicationBuilder(Application.class);
 //        b.headless(false).properties("application.properties").run(args); 
-            runMain();
+        prop.load(ImageDecomposition.class.getClassLoader().getResourceAsStream("application.properties"));
+        runMain();
     }
 
     public static void singlePicOCR() {
@@ -33,11 +40,10 @@ public class Application {
     }
 
     public static void runMain() throws IOException, InterruptedException {
-        String imgPath = "gray.jpg";
-        System.out.println("Saving initial image..");
-//            ImageIO.write(bImageFromConvert, "png", new File(imgPath));
 
-        HashMap<Integer, Point> coords = ImageDecomposition.notMain(imgPath);
+        BufferedImage img = ImageIO.read(new File("grey.png"));
+
+        HashMap<Integer, Point> coords = ImageDecomposition.notMain(img);
 
         List<ElementCandidate> list = new ArrayList<>();
         for (Integer key : coords.keySet()) {
@@ -63,10 +69,7 @@ public class Application {
         }
         System.out.println(fit);
 
-        CharactersRecognition.setPic("output/" + fit.getPath());
-        String elementText = CharactersRecognition.getTextFromPic();
-
-        System.out.println(elementText);
+        singlePicOCR();
 
         System.out.println("THE ELEMENT IS IN " + fit.getPath());
     }
