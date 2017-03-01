@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  *
- * @author scorp
+ * @author scorpds
  */
 @Configuration
 public class ApplicationConfig {

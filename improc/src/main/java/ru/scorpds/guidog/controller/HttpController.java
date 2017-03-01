@@ -25,6 +25,11 @@ import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.util.UriComponentsBuilder;
 import ru.scorpds.guidog.ElementCandidate;
 
+
+/**
+ * 
+ * @author scorpds
+ */
 @RestController
 public class HttpController {
 

@@ -21,16 +21,16 @@ import java.awt.Point;
 
 /**
  *
- * @author scorp
+ * @author scorpds
  */
 public class ImageDecomposition {
 
     static final short WHITE = 255, BLACK = 0;
 
     public static HashMap detectObjects(IplImage srcImage, IplImage transformed) {
-//        CanvasFrame canvas_bin = new CanvasFrame("Transformed");
-//        OpenCVFrameCConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
-//        canvas_bin.showImage(converter.convert(srcImage));
+        CanvasFrame canvas_bin = new CanvasFrame("Transformed");
+        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
+        canvas_bin.showImage(converter.convert(transformed));
 
         IplImage resultImage = cvCreateImage(srcImage.cvSize(), IPL_DEPTH_8U, 3);
         cvCvtColor(srcImage, resultImage, CV_GRAY2BGR);
@@ -117,36 +117,41 @@ public class ImageDecomposition {
 //        for (Integer key : coordinates.keySet()) {
 //            System.out.println("Image: " + key + ".jpg, Coordinates of center: " + ((Point) coordinates.get(key)).x+ ", " + ((Point) coordinates.get(key)).y);
 //        }
-//        final CanvasFrame canvas = new CanvasFrame("Demo");
-//
-//        /* показываем картинку в нашем фрейме */
-//        canvas.showImage(converter.convert(resultImage));
+        final CanvasFrame canvas = new CanvasFrame("Demo");
+
+        /* показываем картинку в нашем фрейме */
+        canvas.showImage(converter.convert(resultImage));
         return coordinates;
     }
 
     private static Mat morphologicalTransformation(Mat source) {
         Mat result = new Mat();
         Mat grad = new Mat();
+        
         Mat morphKernel = getStructuringElement(MORPH_ELLIPSE, new Size(2, 2));
         morphologyEx(source, grad, MORPH_GRADIENT, morphKernel);
-        morphKernel = getStructuringElement(MORPH_RECT, new Size(7, 1));
+        
+        morphKernel = getStructuringElement(MORPH_RECT, new Size(3, 1));
         morphologyEx(grad, result, MORPH_CLOSE, morphKernel);
+
         return result;
     }
 
     public static HashMap notMain(String path) {
 
-        /* открываем картинку */
         IplImage image = cvLoadImage(path, CV_LOAD_IMAGE_GRAYSCALE);
         Mat mat = new Mat(image);
 
 //        final CanvasFrame canvas_bin = new CanvasFrame("Bin");
 //        OpenCVFrameConverter.ToIplImage converter = new OpenCVFrameConverter.ToIplImage();
 //        canvas_bin.showImage(converter.convert(image));
-
-        IplImage dst = new IplImage(morphologicalTransformation(mat));
         
-        return detectObjects(image, dst);
+
+//        IplImage dst = new IplImage(morphologicalTransformation(mat));
+//        adaptiveThreshold(mat, mat, 254, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 5, 2);
+        IplImage thr = new IplImage(mat);
+        thr = new IplImage(morphologicalTransformation(mat));
+        return detectObjects(image, thr);
     }
 
 }

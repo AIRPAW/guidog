@@ -6,7 +6,7 @@ import org.springframework.jdbc.core.RowMapper;
 
 /**
  *
- * @author scorp
+ * @author scorpds
  */
 public class Image implements RowMapper {
 
