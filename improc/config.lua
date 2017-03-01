@@ -1,6 +1,6 @@
 localPath         = {
 getLocalPath = function ()
-                  return '/home/sbt-ulyanov-ka/NetBeansProjects/guidog/improc/'
+                  return '~/NetBeansProjects/guidog/improc/'
                end
 }
 
