@@ -1,4 +1,4 @@
-package ru.sbtqa.mlclient;
+package ru.mlclient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +12,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 
 /**
  *
- * @author sbt-ulyanov-ka
+ * @author scorpds
  */
 public class RequestBuilder {
 

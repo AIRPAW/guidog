@@ -1,9 +1,4 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-package ru.sbtqa.mlclient;
+package ru.mlclient;
 
 import java.awt.AWTException;
 import java.awt.HeadlessException;
@@ -15,7 +10,7 @@ import java.io.IOException;
 
 /**
  *
- * @author sbt-ulyanov-ka
+ * @author scorpds
  */
 public class Application {
 
