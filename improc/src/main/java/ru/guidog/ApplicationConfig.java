@@ -1,4 +1,4 @@
-package ru.scorpds.guidog;
+package ru.guidog;
 
 import org.springframework.context.annotation.Configuration;
 

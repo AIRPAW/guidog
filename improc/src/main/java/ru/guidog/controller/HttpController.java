@@ -1,7 +1,7 @@
-package ru.scorpds.guidog.controller;
+package ru.guidog.controller;
 
 import java.awt.Point;
-import ru.scorpds.guidog.service.ImageDecomposition;
+import ru.guidog.service.ImageDecomposition;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.util.UriComponentsBuilder;
-import static ru.scorpds.guidog.Guide.runTorch;
-import ru.scorpds.guidog.model.Suspect;
-import ru.scorpds.guidog.model.SuspectsList;
+import static ru.guidog.Guide.runTorch;
+import ru.guidog.model.Suspect;
+import ru.guidog.model.SuspectsList;
 
 /**
  *

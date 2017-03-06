@@ -1,4 +1,4 @@
-package ru.scorpds.guidog.service;
+package ru.guidog.service;
 
 import java.io.File;
 import java.util.HashMap;
@@ -23,9 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import ru.scorpds.guidog.Guide;
-import ru.scorpds.guidog.model.Suspect;
-import ru.scorpds.guidog.model.SuspectsList;
+import ru.guidog.Guide;
+import ru.guidog.model.Suspect;
+import ru.guidog.model.SuspectsList;
 
 /**
  *

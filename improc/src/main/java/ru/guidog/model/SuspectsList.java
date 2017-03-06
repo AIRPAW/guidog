@@ -3,9 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package ru.scorpds.guidog.model;
+package ru.guidog.model;
 
-import ru.scorpds.guidog.model.Suspect;
+import ru.guidog.model.Suspect;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.Consumer;

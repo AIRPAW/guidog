@@ -1,4 +1,4 @@
-package ru.scorpds.guidog.model;
+package ru.guidog.model;
 
 import org.bytedeco.javacpp.opencv_core.IplImage;
 

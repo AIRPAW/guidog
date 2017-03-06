@@ -1,7 +1,7 @@
-package ru.scorpds.guidog;
+package ru.guidog;
 
-import ru.scorpds.guidog.model.SuspectsList;
-import ru.scorpds.guidog.model.Suspect;
+import ru.guidog.model.SuspectsList;
+import ru.guidog.model.Suspect;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import ru.scorpds.guidog.service.CharactersRecognition;
-import ru.scorpds.guidog.service.ImageDecomposition;
+import ru.guidog.service.CharactersRecognition;
+import ru.guidog.service.ImageDecomposition;
 
 /**
  *

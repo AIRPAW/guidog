@@ -1,4 +1,4 @@
-package ru.scorpds.guidog.service;
+package ru.guidog.service;
 
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.lept;
