@@ -23,11 +23,11 @@ public class RequestBuilder {
         conn = (HttpURLConnection) url.openConnection();
     }
 
-    public void sendRequest(RawScreenshot image) throws IOException {
+    public void sendRequest(RawScreenshot image, String elementType, String elementText) throws IOException {
 
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-        builder.addTextBody("elementType", "button", ContentType.TEXT_PLAIN);
-        builder.addTextBody("elementCaption", "text", ContentType.TEXT_PLAIN);
+        builder.addTextBody("elementType", elementType, ContentType.TEXT_PLAIN);
+        builder.addTextBody("elementCaption", elementText, ContentType.TEXT_PLAIN);
         builder.addBinaryBody("image", image.getBytes(), ContentType.MULTIPART_FORM_DATA, "1.png");
         HttpEntity multipart = builder.build();
 
