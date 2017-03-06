@@ -23,11 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.util.UriComponentsBuilder;
-import ru.scorpds.guidog.ElementCandidate;
-
+import static ru.scorpds.guidog.Guide.runTorch;
+import ru.scorpds.guidog.model.Suspect;
+import ru.scorpds.guidog.model.SuspectsList;
 
 /**
- * 
+ *
  * @author scorpds
  */
 @RestController
@@ -40,30 +41,23 @@ public class HttpController {
 
             MultipartHttpServletRequest rs = (MultipartHttpServletRequest) req;
             InputStream in = new ByteArrayInputStream(req.getFile("image").getBytes());
+            
+            ImageDecomposition decomp = new ImageDecomposition();
 
-            BufferedImage bImageFromConvert = ImageIO.read(in);
+            SuspectsList imgList = decomp.batchedProcessing(getImgFromRequest(in));
 
-            String imgPath = "sourceImage.png";
-            System.out.println("Saving initial image..");
-            ImageIO.write(bImageFromConvert, "png", new File(imgPath));
-
-            HashMap<Integer, Point> coords = ImageDecomposition.notMain(bImageFromConvert);
-
-            List<ElementCandidate> list = new ArrayList<>();
-            for (Integer key : coords.keySet()) {
-                list.add(runTorch(key + ".jpg"));
-                ElementCandidate tmp = list.get(list.size() - 1);
-                if (tmp != null) {
-                    tmp.setCoords(coords.get(key).x, coords.get(key).y);
-                }
-
+            SuspectsList list = new SuspectsList();
+            for (Suspect suspect : imgList) {
+                list.add(runTorch(suspect.getPath()));
+                list.getLast().setCurImg(suspect.getCurImg());
+                list.getLast().setCoords(suspect.getX(), suspect.getY());
             }
 
-            ElementCandidate fit = null;
+            Suspect fit = null;
             double maxFit = 0.0;
-            for (ElementCandidate elem : list) {
+            for (Suspect elem : list) {
 
-                if (null != elem && elem.getType().name().equalsIgnoreCase(rs.getParameter("elementType"))) {
+                if (null != elem && elem.getType().name().equalsIgnoreCase(rs.getParameter("elementType"))) {                    
                     if (elem.getFitness() > maxFit) {
                         maxFit = elem.getFitness();
                         fit = elem;
@@ -92,9 +86,9 @@ public class HttpController {
         return new ResponseEntity<>(response.toString(), HttpStatus.CREATED);
     }
 
-    public ElementCandidate runTorch(String path) throws IOException, InterruptedException {
+    public Suspect runTorch(String path) throws IOException, InterruptedException {
         String exec = "th classif.lua " + path;
-        ElementCandidate elem = null;
+        Suspect elem = null;
 
         Process proc = Runtime.getRuntime().exec(exec);
         proc.waitFor();
@@ -112,28 +106,39 @@ public class HttpController {
 //            }
 //            System.out.print("\n");
             if (parts.length == 3) {
-                ElementCandidate.ElementType type = ElementCandidate.ElementType.OTHER;
+                Suspect.ElementType type = Suspect.ElementType.OTHER;
                 switch (parts[1]) {
                     case "button":
-                        type = ElementCandidate.ElementType.BUTTON;
+                        type = Suspect.ElementType.BUTTON;
                         break;
                     case "checkbox":
-                        type = ElementCandidate.ElementType.CHECKBOX;
+                        type = Suspect.ElementType.CHECKBOX;
                         break;
                     case "input":
-                        type = ElementCandidate.ElementType.INPUT;
+                        type = Suspect.ElementType.INPUT;
                         break;
                     case "other":
-                        type = ElementCandidate.ElementType.OTHER;
+                        type = Suspect.ElementType.OTHER;
                         break;
                     default:
                         break;
                 }
-                elem = new ElementCandidate(path, type, Double.parseDouble(parts[parts.length - 1]));
+                elem = new Suspect(path, type, Double.parseDouble(parts[parts.length - 1]));
             }
         }
 
         proc.waitFor();
         return elem;
+    }
+
+    private BufferedImage getImgFromRequest(InputStream in) throws IOException {
+
+        BufferedImage bImageFromConvert = ImageIO.read(in);
+
+        String imgPath = "sourceImage.png";
+        System.out.println("Saving initial image..");
+        ImageIO.write(bImageFromConvert, "png", new File(imgPath));
+
+        return bImageFromConvert;
     }
 }

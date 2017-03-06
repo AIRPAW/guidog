@@ -1,16 +1,17 @@
 package ru.scorpds.guidog;
 
-import java.awt.Point;
+import ru.scorpds.guidog.model.SuspectsList;
+import ru.scorpds.guidog.model.Suspect;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import ru.scorpds.guidog.service.CharactersRecognition;
 import ru.scorpds.guidog.service.ImageDecomposition;
@@ -19,16 +20,28 @@ import ru.scorpds.guidog.service.ImageDecomposition;
  *
  * @author scorpds
  */
-//@SpringBootApplication
-public class Application {
+@SpringBootApplication
+public class Guide {
 
-    public static Properties prop = new Properties();
+    private static final Properties CONFIG = new Properties();
+    private static boolean writeImgOnDisk;
+    private static boolean showImagesFrames;
+
+    static {
+        try {
+            CONFIG.load(Guide.class.getClassLoader().getResourceAsStream("config.properties"));
+            writeImgOnDisk = Guide.CONFIG.getProperty("saveImagesOnDisk").equalsIgnoreCase("true");
+            showImagesFrames = Guide.CONFIG.getProperty("showImages").equalsIgnoreCase("true");
+        } catch (IOException ex) {
+            Logger.getLogger(Guide.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-//        SpringApplicationBuilder b = new SpringApplicationBuilder(Application.class);
-//        b.headless(false).properties("application.properties").run(args); 
-        prop.load(ImageDecomposition.class.getClassLoader().getResourceAsStream("application.properties"));
-        runMain();
+        SpringApplicationBuilder b = new SpringApplicationBuilder(Guide.class);
+        b.headless(false).properties("application.properties").run(args); 
+
+//        runMain();
     }
 
     public static void singlePicOCR() {
@@ -42,22 +55,19 @@ public class Application {
     public static void runMain() throws IOException, InterruptedException {
 
         BufferedImage img = ImageIO.read(new File("grey.png"));
+        ImageDecomposition decomp = new ImageDecomposition();
 
-        HashMap<Integer, Point> coords = ImageDecomposition.notMain(img);
+        SuspectsList imgList = decomp.batchedProcessing(img);
 
-        List<ElementCandidate> list = new ArrayList<>();
-        for (Integer key : coords.keySet()) {
-            list.add(runTorch(key + ".jpg"));
-            ElementCandidate tmp = list.get(list.size() - 1);
-            if (tmp != null) {
-                tmp.setCoords(coords.get(key).x, coords.get(key).y);
-            }
-
+        SuspectsList list = new SuspectsList();
+        for (Suspect suspect : imgList) {
+            list.add(runTorch(suspect.getPath()));
+            list.getLast().setCurImg(suspect.getCurImg());
         }
 
-        ElementCandidate fit = null;
+        Suspect fit = null;
         double maxFit = 0.0;
-        for (ElementCandidate elem : list) {
+        for (Suspect elem : list) {
 
             if (null != elem && elem.getType().name().equalsIgnoreCase("button")) {
                 if (elem.getFitness() > maxFit) {
@@ -69,14 +79,14 @@ public class Application {
         }
         System.out.println(fit);
 
-        singlePicOCR();
+//        singlePicOCR();
 
         System.out.println("THE ELEMENT IS IN " + fit.getPath());
     }
 
-    public static ElementCandidate runTorch(String path) throws IOException, InterruptedException {
+    public static Suspect runTorch(String path) throws IOException, InterruptedException {
         String exec = "th classif.lua " + path;
-        ElementCandidate elem = null;
+        Suspect elem = null;
 
         Process proc = Runtime.getRuntime().exec(exec);
         proc.waitFor();
@@ -94,28 +104,40 @@ public class Application {
 //            }
 //            System.out.print("\n");
             if (parts.length == 3) {
-                ElementCandidate.ElementType type = ElementCandidate.ElementType.OTHER;
+                Suspect.ElementType type = Suspect.ElementType.OTHER;
                 switch (parts[1]) {
                     case "button":
-                        type = ElementCandidate.ElementType.BUTTON;
+                        type = Suspect.ElementType.BUTTON;
                         break;
                     case "checkbox":
-                        type = ElementCandidate.ElementType.CHECKBOX;
+                        type = Suspect.ElementType.CHECKBOX;
                         break;
                     case "input":
-                        type = ElementCandidate.ElementType.INPUT;
+                        type = Suspect.ElementType.INPUT;
                         break;
                     case "other":
-                        type = ElementCandidate.ElementType.OTHER;
+                        type = Suspect.ElementType.OTHER;
                         break;
                     default:
                         break;
                 }
-                elem = new ElementCandidate(path, type, Double.parseDouble(parts[parts.length - 1]));
+                elem = new Suspect(path, type, Double.parseDouble(parts[parts.length - 1]));
             }
         }
 
         proc.waitFor();
         return elem;
+    }
+
+    public static boolean saveImages() {
+        return writeImgOnDisk;
+    }
+
+    public static Properties getConfig() {
+        return CONFIG;
+    }
+
+    public static boolean showImages() {
+        return showImagesFrames;
     }
 }
