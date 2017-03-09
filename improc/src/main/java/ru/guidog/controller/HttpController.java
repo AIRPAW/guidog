@@ -1,20 +1,15 @@
 package ru.guidog.controller;
 
-import java.awt.Point;
 import ru.guidog.service.ImageDecomposition;
+import ru.guidog.model.Suspect;
+import ru.guidog.model.SuspectsList;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import javax.imageio.ImageIO;
 import javax.json.Json;
 import javax.json.JsonObject;
@@ -26,9 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.multipart.MultipartRequest;
 import org.springframework.web.util.UriComponentsBuilder;
-import static ru.guidog.Guide.runTorch;
-import ru.guidog.model.Suspect;
-import ru.guidog.model.SuspectsList;
+
 
 /**
  *
