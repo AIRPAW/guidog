@@ -1,7 +1,6 @@
 package ru.guidog.service;
 
 import java.io.File;
-import java.util.HashMap;
 import org.bytedeco.javacpp.Loader;
 import static org.bytedeco.javacpp.opencv_core.*;
 import org.bytedeco.javacpp.opencv_core.CvContour;
@@ -17,10 +16,11 @@ import static org.bytedeco.javacpp.opencv_imgcodecs.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
-import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import ru.guidog.Guide;
@@ -32,6 +32,8 @@ import ru.guidog.model.SuspectsList;
  * @author scorpds
  */
 public class ImageDecomposition {
+    
+    Logger log = LogManager.getLogger(this.getClass());
 
     private final boolean SAVE_ON_DISK;
     private final boolean SHOW_IMAGES;
@@ -44,22 +46,20 @@ public class ImageDecomposition {
 
     private IplImage originalImg;
 
-    private Mat binar;
+    private Mat binar = new Mat();
 
     private OpenCVFrameConverter.ToIplImage cvConverter;
 
     public ImageDecomposition() {
         SAVE_ON_DISK = Guide.saveImages();
         SHOW_IMAGES = Guide.showImages();
-        STORAGE_PATH = Guide.getConfig().getProperty("storage.shared");
+        STORAGE_PATH = System.getenv("HOME") + Guide.getConfig().getProperty("storage.shared");
         CONTOURS_PATH = Guide.getConfig().getProperty("storage.contours");
         RESIZED_PATH = Guide.getConfig().getProperty("storage.output");
         resizeX = Integer.parseInt(Guide.getConfig().getProperty("image.size.x"));
         resizeY = Integer.parseInt(Guide.getConfig().getProperty("image.size.y"));
 
         cvConverter = new OpenCVFrameConverter.ToIplImage();
-
-        binar = new Mat();
     }
 
     public String getStoragePath() {
@@ -75,13 +75,15 @@ public class ImageDecomposition {
 
         CvMemStorage mem = CvMemStorage.create();
         CvSeq contours = new CvSeq();
-
+        
+        log.info("Starting FindContours procedure..");
         cvFindContours(transformed, mem, contours, Loader.sizeof(CvContour.class), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cvPoint(-2, -2));
+        log.info("Contours finding finished!");
 
         if (SAVE_ON_DISK) {
             File imgDir = new File(CONTOURS_PATH);
             if (!imgDir.exists() && !imgDir.mkdir()) {
-                System.err.println("Cannot create i" + CONTOURS_PATH + " folder");
+                System.err.println("Cannot create " + CONTOURS_PATH + " folder");
             }
             File outputDir = new File(RESIZED_PATH);
             if (!outputDir.exists() && !outputDir.mkdir()) {
@@ -90,7 +92,7 @@ public class ImageDecomposition {
         } else {
             File path = new File(STORAGE_PATH);
             if (!path.exists() && !path.mkdir()) {
-                System.err.println("Cannot create output/ folder");
+                System.err.println("Cannot create " + STORAGE_PATH + " folder");
             }
         }
 
@@ -109,6 +111,7 @@ public class ImageDecomposition {
         SuspectsList list = new SuspectsList();
         IplImage shapes = cvCreateImage(originalImg.cvSize(), IPL_DEPTH_8U, 3);
         for (CvSeq ptr = contours; ptr != null; ptr = ptr.h_next()) {
+            log.info("Starting contour image cropping, resizing and saving.." + i);
             boundbox = cvBoundingRect(ptr, 0);
 
             cvRectangle(withContours, cvPoint(boundbox.x(), boundbox.y()),
@@ -169,35 +172,46 @@ public class ImageDecomposition {
 
             i++;
         }
+        log.info("All images saved!");
         return list;
     }
 
     public SuspectsList batchedProcessing(BufferedImage screenshot) throws FileNotFoundException, IOException {
-
+        log.info("Starting image processing..");
         Java2DFrameConverter frameBufferedImageConverter = new Java2DFrameConverter();
         Frame screenshotFrame = frameBufferedImageConverter.convert(screenshot);
 
         originalImg = cvConverter.convert(screenshotFrame);
 
         Mat mat = new Mat(convToGray(originalImg));
-
+        
         if (SAVE_ON_DISK) {
+            log.info("Saving original screenshot..");
             imwrite("recievedScreenshot.jpg", mat);
+            log.info("Done saving!");
         }
-
+        
+        log.info("Starting screenshot thresholding..");
         adaptiveThreshold(mat, binar, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 15, 2);
-
+        log.info("Thresholding done!");
+        
         if (SAVE_ON_DISK) {
+            log.info("Saving thresholded screenshot..");
             imwrite("thresholded.jpg", binar);
+            log.info("Done saving!");
         }
         if (SHOW_IMAGES) {
             showImage(originalImg, "original");
             showImage(new IplImage(binar), "threshholded");
         }
+        log.info("Starting screenshot morphological transformation..");
         mat = morphologicalTransformation(binar);
+        log.info("Transformation done!");
 
         if (SAVE_ON_DISK) {
+            log.info("Saving transformed screenshot..");
             imwrite("transformed.jpg", mat);
+            log.info("Done saving!");
         }
         return detectObjects(new IplImage(mat));
     }
