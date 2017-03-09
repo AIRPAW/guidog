@@ -35,6 +35,9 @@ public class ImageDecomposition {
 
     private final boolean SAVE_ON_DISK;
     private final boolean SHOW_IMAGES;
+    private final String STORAGE_PATH;
+    private final String CONTOURS_PATH;
+    private final String RESIZED_PATH;
 
     private final int resizeX;
     private final int resizeY;
@@ -43,18 +46,24 @@ public class ImageDecomposition {
 
     private Mat binar;
 
-    private final short WHITE = 255, BLACK = 0;
-
     private OpenCVFrameConverter.ToIplImage cvConverter;
 
     public ImageDecomposition() {
         SAVE_ON_DISK = Guide.saveImages();
         SHOW_IMAGES = Guide.showImages();
-        cvConverter = new OpenCVFrameConverter.ToIplImage();
+        STORAGE_PATH = Guide.getConfig().getProperty("storage.shared");
+        CONTOURS_PATH = Guide.getConfig().getProperty("storage.contours");
+        RESIZED_PATH = Guide.getConfig().getProperty("storage.output");
         resizeX = Integer.parseInt(Guide.getConfig().getProperty("image.size.x"));
         resizeY = Integer.parseInt(Guide.getConfig().getProperty("image.size.y"));
 
+        cvConverter = new OpenCVFrameConverter.ToIplImage();
+
         binar = new Mat();
+    }
+
+    public String getStoragePath() {
+        return STORAGE_PATH;
     }
 
     public SuspectsList detectObjects(IplImage transformed) {
@@ -70,12 +79,17 @@ public class ImageDecomposition {
         cvFindContours(transformed, mem, contours, Loader.sizeof(CvContour.class), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cvPoint(-2, -2));
 
         if (SAVE_ON_DISK) {
-            File imgDir = new File("img/");
+            File imgDir = new File(CONTOURS_PATH);
             if (!imgDir.exists() && !imgDir.mkdir()) {
-                System.err.println("Cannot create img/ folder");
+                System.err.println("Cannot create i" + CONTOURS_PATH + " folder");
             }
-            File outputDir = new File("output/");
+            File outputDir = new File(RESIZED_PATH);
             if (!outputDir.exists() && !outputDir.mkdir()) {
+                System.err.println("Cannot create " + RESIZED_PATH + " folder");
+            }
+        } else {
+            File path = new File(STORAGE_PATH);
+            if (!path.exists() && !path.mkdir()) {
                 System.err.println("Cannot create output/ folder");
             }
         }
@@ -108,7 +122,7 @@ public class ImageDecomposition {
             cvSetImageROI(originalImg, cvRect(boundbox.x(), boundbox.y(), boundbox.width(), boundbox.height()));
 
             if (SAVE_ON_DISK) {
-                cvSaveImage("img/" + i + ".jpg", originalImg);
+                cvSaveImage(CONTOURS_PATH + i + ".jpg", originalImg);
             }
 
             Rect result_rec = new Rect(cvGetImageROI(originalImg));
@@ -140,8 +154,9 @@ public class ImageDecomposition {
             int smallPictY = resizeY / 2 - tmp.rows() / 2;
             tmp.copyTo(black.rowRange(smallPictY, (smallPictY + tmp.rows())).colRange(smallPictX, smallPictX + tmp.cols()));
             if (SAVE_ON_DISK) {
-                imwrite("output/" + i + ".jpg", black);
+                imwrite(RESIZED_PATH + i + ".jpg", black);
             }
+            imwrite(STORAGE_PATH + i + ".jpg", black);
             list.add(new Suspect(new IplImage(black)));
 
             cvResetImageROI(originalImg);

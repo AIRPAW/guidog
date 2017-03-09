@@ -25,13 +25,14 @@ public class Guide {
 
     private static final Properties CONFIG = new Properties();
     private static boolean writeImgOnDisk;
-    private static boolean showImagesFrames;
+    private static boolean showImagesFrames;;
 
     static {
         try {
             CONFIG.load(Guide.class.getClassLoader().getResourceAsStream("config.properties"));
             writeImgOnDisk = Guide.CONFIG.getProperty("saveImagesOnDisk").equalsIgnoreCase("true");
             showImagesFrames = Guide.CONFIG.getProperty("showImages").equalsIgnoreCase("true");
+            
         } catch (IOException ex) {
             Logger.getLogger(Guide.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -39,7 +40,7 @@ public class Guide {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         SpringApplicationBuilder b = new SpringApplicationBuilder(Guide.class);
-        b.headless(false).properties("application.properties").run(args); 
+        b.headless(false).properties("application.properties").run(args);
 
 //        runMain();
     }
@@ -80,7 +81,6 @@ public class Guide {
         System.out.println(fit);
 
 //        singlePicOCR();
-
         System.out.println("THE ELEMENT IS IN " + fit.getPath());
     }
 
@@ -140,4 +140,5 @@ public class Guide {
     public static boolean showImages() {
         return showImagesFrames;
     }
+
 }

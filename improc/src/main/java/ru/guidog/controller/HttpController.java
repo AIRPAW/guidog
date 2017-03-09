@@ -5,10 +5,13 @@ import ru.guidog.service.ImageDecomposition;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +55,11 @@ public class HttpController {
                 list.getLast().setCurImg(suspect.getCurImg());
                 list.getLast().setCoords(suspect.getX(), suspect.getY());
             }
+            
+            File dir = new File(decomp.getStoragePath());
+            for (File file : dir.listFiles()) {
+                file.delete();
+            }
 
             Suspect fit = null;
             double maxFit = 0.0;
@@ -90,7 +98,7 @@ public class HttpController {
         String exec = "th classif.lua " + path;
         Suspect elem = null;
 
-        Process proc = Runtime.getRuntime().exec(exec);
+        Process proc = Runtime.getRuntime().exec(exec);        
         proc.waitFor();
         BufferedReader reader
                 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
@@ -101,10 +109,6 @@ public class HttpController {
             parts = line.split("\t");
         }
         if (parts != null) {
-//            for (String part : parts) {
-//                System.out.println(part);
-//            }
-//            System.out.print("\n");
             if (parts.length == 3) {
                 Suspect.ElementType type = Suspect.ElementType.OTHER;
                 switch (parts[1]) {
@@ -130,11 +134,17 @@ public class HttpController {
         proc.waitFor();
         return elem;
     }
+    
+    public Suspect runTorch(Suspect test) throws IOException {
+        Suspect susp = null;
+        ProcessBuilder pb = new ProcessBuilder();
+        return susp;
+    }
 
     private BufferedImage getImgFromRequest(InputStream in) throws IOException {
 
         BufferedImage bImageFromConvert = ImageIO.read(in);
-
+                
         String imgPath = "sourceImage.png";
         System.out.println("Saving initial image..");
         ImageIO.write(bImageFromConvert, "png", new File(imgPath));

@@ -24,7 +24,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>ru.scorpds.guidog.Application</mainClass>
+                            <mainClass>ru.guidog.Guide</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -33,7 +33,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>ru.scorpds.guidog.Application</mainClass>
+                    <mainClass>ru.guidog.Guide</mainClass>
                 </configuration>
                 <executions>
                     <execution>

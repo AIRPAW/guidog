@@ -16,7 +16,7 @@ local config = {
   with_plotting     = true,
   data_file_path    = localPath.getLocalPath() .. 'data/save.dat',
   pathToImages      = localPath.getLocalPath() .. 'images/',
-  pathToTestImages  = localPath.getLocalPath() .. 'output/',
+  pathToTestImages  = "/home/sbt-ulyanov-ka/tmp/shared/",
   categories        = {"button", "checkbox", "input", "other"},
   imagesSize        = {x = 200, y = 30},
   channels          = 1,
