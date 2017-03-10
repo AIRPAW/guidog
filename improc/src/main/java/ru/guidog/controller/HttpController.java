@@ -50,14 +50,19 @@ public class HttpController {
             float last = 0.0f, sumSec = 0.0f;
 
             for (Suspect suspect : imgList) {
+                
                 log.info("Calling Torch for image classification..");
+                
                 start = System.nanoTime();
                 list.add(runTorch(suspect.getPath()));
                 last = System.nanoTime() - start;
+                
                 list.getLast().setCurImg(suspect.getCurImg());
                 list.getLast().setCoords(suspect.getX(), suspect.getY());
+                
                 last = last / 1000000000;
                 sumSec += last;
+                
                 log.info("Image classification done in " + last + " sec! Saving info..");
             }
             log.info("All images classification has took " + sumSec + " seconds!");
