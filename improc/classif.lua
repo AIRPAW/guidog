@@ -1,5 +1,6 @@
 
--- нужно запустить с именем картинки из папки test_path
+-- в качетсве первого аргумента задается путь к директории с тестовыми картинками
+-- второй аргумент - тип требуемого элемента
 
 require 'torch'
 require 'optim'
@@ -7,34 +8,91 @@ require 'xlua'
 require 'image'
 require 'nn'
 require 'nngraph'
+require 'paths'
 
 local config = require 'config'
+local threads = require 'threads'
+local nthreads = config.nthreads
+file = io.open('classifLog.txt','w')
+-- таблица для хранения батча элементов для распознавания
+-- при инициализации содержит таблицу с картинкой, предсказанной вероятностью,
+-- равной 0, предсказанный класс, равный пустой строке,
+local predictedElements = {}
+function newElement(t, img)
+    local element = {image = img, p = 0, label = '', accordindex = (#predictedElements + 1)}
+    element.getMeta = function(t)
+      print(t.p, t.label, t.accordindex)
+    end
+    table.insert(t, element)
+end
+
+function filterByType(t, type)
+  local typifidElements = {}
+  for key, el in pairs(t) do
+    if el.label == type then table.insert(typifidElements, el) end
+  end
+  return typifidElements
+end
+
+function filterByMaxP(t, type)
+  local filtred = filterByType(t, type)
+  local max = 0
+  local index = 0
+  for key, el in pairs(filtred) do
+      if max < el.p then
+        max = el.p
+        index = key
+      end
+  end
+  return filtred[index], index
+end
 
 local model_file = config.modelPath .. 'model'
-local test_path = config.pathToTestImages
-
 torch.setdefaulttensortype('torch.DoubleTensor')
 local channels = config.channels
 local size = config.size
 local categories = config.categories
-local name_img = arg[1]
-
+local imgPath = arg[1]
 local m = torch.load(model_file)
-local input = image.load(test_path .. name_img)
-local inp = torch.Tensor(input)
-local predicted = m:forward(inp)
+local elementType = arg[2]
 
---image.display(input)
-print("predicted: ")
-print(predicted)
-local p = torch.exp(predicted)
-local mx, max_i = torch.max(p, 1)
-
-for i = 1, predicted:size(1) do
-  if (max_i[1] == i) then
-    print(sys.COLORS.green .. name_img, categories[i], torch.exp(predicted[i]))
-  else
-    --print(sys.COLORS.white .. categories[i], torch.exp(predicted[i]))
-  end
-  p = p + torch.exp(predicted[i])
+for file in paths.iterfiles(imgPath) do
+  newElement(predictedElements, image.load(imgPath .. file))
 end
+
+local nprocess = 10
+local resultTable = {}
+local pool = threads.Threads(
+   nthreads,
+   function()
+     require "nn"
+   end,
+   function()
+      l_model = m:clone()
+   end
+ )
+
+local time = sys.clock()
+for key, el in pairs(predictedElements) do
+  pool:addjob(
+  function()
+    local inp = torch.Tensor(el.image)
+    local p = torch.exp(l_model:forward(inp))
+    local mx, max_i = torch.max(p, 1)
+    el.p = mx[1]
+    el.label = categories[max_i[1]]
+    return el
+  end,
+  function(element)
+    table.insert(resultTable,element)
+  end
+)
+end
+pool:terminate()
+time = sys.clock() - time
+file:write('time to classify ' .. #predictedElements .. ' elements ' .. (time*1000) .. 'ms \n')
+file:close()
+-- for key, el in pairs(filterByType(predictedElements, elementType)) do
+--   el:getMeta()
+-- end
+print(filterByMaxP(resultTable, elementType):getMeta())

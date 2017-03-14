@@ -22,7 +22,8 @@ local config = {
   imagesSize        = {x = 200, y = 30},
   channels          = 1,
   trainPortion      = 0.7,
-  numImages         = 10
+  numImages         = 10,
+  nthreads          = 1
 }
 
 
