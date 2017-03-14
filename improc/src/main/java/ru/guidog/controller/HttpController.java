@@ -37,7 +37,7 @@ public class HttpController {
     public ResponseEntity<String> processScreenshot(MultipartRequest req, UriComponentsBuilder ub) throws InterruptedException {
         JsonObject response = null;
         try {
-            log.info("Request recieved. Starting processing..");
+
             MultipartHttpServletRequest rs = (MultipartHttpServletRequest) req;
             InputStream in = new ByteArrayInputStream(req.getFile("image").getBytes());
 
@@ -45,52 +45,39 @@ public class HttpController {
 
             SuspectsList imgList = decomp.batchedProcessing(getImgFromRequest(in));
 
-            SuspectsList list = new SuspectsList();
+            Suspect detectedEl = null;
             long start = 0;
             float last = 0.0f, sumSec = 0.0f;
-
-            for (Suspect suspect : imgList) {
-                log.info("Calling Torch for image classification..");
-                start = System.nanoTime();
-                list.add(runTorch(suspect.getPath()));
-                last = System.nanoTime() - start;
-                list.getLast().setCurImg(suspect.getCurImg());
-                list.getLast().setCoords(suspect.getX(), suspect.getY());
-                last = last / 1000000000;
-                sumSec += last;
-                log.info("Image classification done in " + last + " sec! Saving info..");
-            }
+            log.info("Calling Torch for image classification..");
+            start = System.nanoTime();
+            detectedEl = runTorch(decomp.getStoragePath(), rs.getParameter("elementType"), rs.getParameter("elementText"));
+            last = System.nanoTime() - start;
+            last = last / 1000000000;
+            sumSec += last;
             log.info("All images classification has took " + sumSec + " seconds!");
+            for (Suspect s : imgList) {
+                if (s.getPath().equals(detectedEl.getPath())) {
+                    detectedEl.setX(s.getX());
+                    detectedEl.setY(s.getY());
+                    continue;
+                }
+            }
 
             File dir = new File(decomp.getStoragePath());
             for (File file : dir.listFiles()) {
                 file.delete();
             }
-            log.info("Temp directory cleared");
 
-            Suspect fit = null;
-            double maxFit = 0.0;
-            for (Suspect elem : list) {
-
-                if (null != elem && elem.getType().name().equalsIgnoreCase(rs.getParameter("elementType"))) {
-                    if (elem.getFitness() > maxFit) {
-                        maxFit = elem.getFitness();
-                        fit = elem;
-                        System.out.println("New fit found!");
-                    }
-                }
-            }
-            log.info("Best fit element found! Starting composing response..");
-            System.out.println(fit);
+            System.out.println(detectedEl);
             response = Json.createObjectBuilder()
                     .add("point",
                             Json.createObjectBuilder()
-                                    .add("x", fit.getX())
-                                    .add("y", fit.getY())
+                                    .add("x", detectedEl.getX())
+                                    .add("y", detectedEl.getY())
                                     .build())
                     .build();
 
-            System.out.println("THE ELEMENT IS IN " + fit.getPath());
+            System.out.println("THE ELEMENT IS IN " + detectedEl.getPath());
 
             for (String string : rs.getParameterMap().keySet()) {
                 System.out.println("Request param: " + string + ", value: " + rs.getParameter(string));
@@ -102,8 +89,8 @@ public class HttpController {
         return new ResponseEntity<>(response.toString(), HttpStatus.CREATED);
     }
 
-    public Suspect runTorch(String path) throws IOException, InterruptedException {
-        String exec = "th classif.lua " + path;
+    public Suspect runTorch(String path, String elementType, String elementText) throws IOException, InterruptedException {
+        String exec = "th classif.lua " + path + " " + elementType;
         Suspect elem = null;
 
         Process proc = Runtime.getRuntime().exec(exec);
@@ -135,7 +122,7 @@ public class HttpController {
                     default:
                         break;
                 }
-                elem = new Suspect(path, type, Double.parseDouble(parts[parts.length - 1]));
+                elem = new Suspect(parts[parts.length - 1] + ".jpg", type, Double.parseDouble(parts[0]));
             }
         }
 
