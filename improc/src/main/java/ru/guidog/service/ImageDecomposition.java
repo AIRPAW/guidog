@@ -111,7 +111,6 @@ public class ImageDecomposition {
         SuspectsList list = new SuspectsList();
         IplImage shapes = cvCreateImage(originalImg.cvSize(), IPL_DEPTH_8U, 3);
         for (CvSeq ptr = contours; ptr != null; ptr = ptr.h_next()) {
-            log.info("Starting contour image cropping, resizing and saving.." + i);
             boundbox = cvBoundingRect(ptr, 0);
 
             cvRectangle(withContours, cvPoint(boundbox.x(), boundbox.y()),
