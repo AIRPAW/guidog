@@ -10,7 +10,6 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.Raster;
-import java.awt.image.WritableRaster;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -30,7 +29,7 @@ public class Binarization {
         this.image = image;
     }
 
-    public void test() {
+    public void tiles() {
         int xTileNum = (image.getWidth() / frameWidth);
         if (frameWidth * xTileNum < image.getWidth()) {
             xTileNum++;
@@ -42,20 +41,26 @@ public class Binarization {
         for (int i = 0; i < xTileNum; i++) {
             for (int j = 0; j < yTileNum; j++) {
                 Raster frame = image.getData(new Rectangle(i * frameWidth, j * frameHeight, frameWidth, frameHeight));
-                getMinAvg(frame); //                show(frame);
+                show(frame);
             }
         }
     }
 
-    private void getMinAvg(Raster frame) {
+    private double getMinAvg(Raster frame) {
         double[] pixel = null;
         double pixelBrigthness;
+        double acc = 0.0;
         for (int i = 0; i < frameWidth; i++) {
             for (int j = 0; j < frameHeight; j++) {
-                pixel = frame.getPixel(i, j, pixel);        
-                pixelBrigthness = (pixel[0] * 0.2126f + pixel[1] * 0.7152f + pixel[2] * 0.0722f) / 255;
+                pixel = frame.getPixel(i, j, pixel);
+                acc += pixelBrigthness = getBrightness(pixel);
             }
         }
+        return acc / frameWidth * frameHeight;
+    }
+
+    private double getBrightness(double[] pixel) {
+        return (pixel[0] * 0.2126f + pixel[1] * 0.7152f + pixel[2] * 0.0722f) / 255;
     }
 
     private void show(Raster raster) {
@@ -70,5 +75,16 @@ public class Binarization {
         frame.setSize(img.getWidth(), img.getHeight());
         frame.setVisible(true);
 
+    }
+
+    public static void show(BufferedImage img) {
+        JFrame frame = new JFrame();
+        JLabel label = new JLabel(new ImageIcon(img));
+        JPanel panel = new JPanel(new BorderLayout());
+
+        panel.add(label);
+        frame.add(panel);
+        frame.setSize(img.getWidth(), img.getHeight());
+        frame.setVisible(true);
     }
 }

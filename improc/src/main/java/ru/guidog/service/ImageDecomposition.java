@@ -14,15 +14,14 @@ import org.bytedeco.javacpp.opencv_core.Scalar;
 import org.bytedeco.javacpp.opencv_core.Size;
 import static org.bytedeco.javacpp.opencv_imgcodecs.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
-import org.bytedeco.javacv.CanvasFrame;
-import org.bytedeco.javacv.OpenCVFrameConverter;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.javacpp.opencv_features2d;
 import ru.guidog.Guide;
 import ru.guidog.model.Suspect;
 import ru.guidog.model.SuspectsList;
@@ -32,7 +31,7 @@ import ru.guidog.model.SuspectsList;
  * @author scorpds
  */
 public class ImageDecomposition {
-    
+
     Logger log = LogManager.getLogger(this.getClass());
 
     private final boolean SAVE_ON_DISK;
@@ -45,10 +44,9 @@ public class ImageDecomposition {
     private final int resizeY;
 
     private IplImage originalImg;
+    private IplImage shapes;
 
     private Mat binar = new Mat();
-
-    private OpenCVFrameConverter.ToIplImage cvConverter;
 
     public ImageDecomposition() {
         SAVE_ON_DISK = Guide.saveImages();
@@ -58,8 +56,6 @@ public class ImageDecomposition {
         RESIZED_PATH = Guide.getConfig().getProperty("storage.output");
         resizeX = Integer.parseInt(Guide.getConfig().getProperty("image.size.x"));
         resizeY = Integer.parseInt(Guide.getConfig().getProperty("image.size.y"));
-
-        cvConverter = new OpenCVFrameConverter.ToIplImage();
     }
 
     public String getStoragePath() {
@@ -68,16 +64,17 @@ public class ImageDecomposition {
 
     public SuspectsList detectObjects(IplImage transformed) {
         if (SHOW_IMAGES) {
-            showImage(transformed, "Transformed");
+            ImageUtils.show(transformed, "Transformed");
         }
 
         IplImage withContours = originalImg.clone();
 
         CvMemStorage mem = CvMemStorage.create();
         CvSeq contours = new CvSeq();
-        
+
         log.info("Starting FindContours procedure..");
         cvFindContours(transformed, mem, contours, Loader.sizeof(CvContour.class), CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, cvPoint(-2, -2));
+
         log.info("Contours finding finished!");
 
         if (SAVE_ON_DISK) {
@@ -99,7 +96,7 @@ public class ImageDecomposition {
         SuspectsList imgList = getContours(withContours, contours);
 
         if (SHOW_IMAGES) {
-            showImage(withContours, "Result");
+            ImageUtils.show(withContours, "Result");
         }
 
         return imgList;
@@ -178,42 +175,41 @@ public class ImageDecomposition {
 
     public SuspectsList batchedProcessing(BufferedImage screenshot) throws FileNotFoundException, IOException {
         log.info("Starting image processing..");
-        Java2DFrameConverter frameBufferedImageConverter = new Java2DFrameConverter();
-        Frame screenshotFrame = frameBufferedImageConverter.convert(screenshot);
 
-        originalImg = cvConverter.convert(screenshotFrame);
+        originalImg = ImageUtils.convertBufferedToIpl(screenshot);
 
-        Mat mat = new Mat(convToGray(originalImg));
-        
+        Mat convert = new Mat(originalImg);
+        originalImg = new IplImage(convert);
+        ImageUtils.show(originalImg, "Original");
+
+        Mat mat = new Mat(ImageUtils.convToGray(originalImg));
+        Mat test = mat.clone();
+
         if (SAVE_ON_DISK) {
-            log.info("Saving original screenshot..");
-            imwrite("recievedScreenshot.jpg", mat);
-            log.info("Done saving!");
+            ImageUtils.writeImageToDisk(mat, "recievedScreenshot.jpg");
         }
-        
+
         log.info("Starting screenshot thresholding..");
-        adaptiveThreshold(mat, binar, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY_INV, 15, 2);
+        adaptiveThreshold(mat, mat, 255, ADAPTIVE_THRESH_GAUSSIAN_C, THRESH_BINARY, 5, 1);
         log.info("Thresholding done!");
-        
+
         if (SAVE_ON_DISK) {
-            log.info("Saving thresholded screenshot..");
-            imwrite("thresholded.jpg", binar);
-            log.info("Done saving!");
+            ImageUtils.writeImageToDisk(mat, "thresholded.jpg");
         }
         if (SHOW_IMAGES) {
-            showImage(originalImg, "original");
-            showImage(new IplImage(binar), "threshholded");
+            ImageUtils.show(originalImg, "original");
+            ImageUtils.show(new IplImage(binar), "threshholded");
         }
+
         log.info("Starting screenshot morphological transformation..");
-        mat = morphologicalTransformation(binar);
+//        mat = morphologicalTransformation(mat);
         log.info("Transformation done!");
 
         if (SAVE_ON_DISK) {
-            log.info("Saving transformed screenshot..");
-            imwrite("transformed.jpg", mat);
-            log.info("Done saving!");
+            ImageUtils.writeImageToDisk(mat, "transformed.jpg");
         }
-        return detectObjects(new IplImage(mat));
+//        return detectObjects(new IplImage(mat));
+        return findMser(test);
     }
 
     private Mat morphologicalTransformation(Mat source) {
@@ -221,23 +217,127 @@ public class ImageDecomposition {
         Mat open = new Mat();
 
         Mat morphKernel = getStructuringElement(MORPH_CROSS, new Size(2, 2));
-        morphologyEx(source, open, MORPH_OPEN, morphKernel);
+        morphologyEx(source, result, MORPH_OPEN, morphKernel);
 
-        morphKernel = getStructuringElement(MORPH_RECT, new Size(7, 2));
-        morphologyEx(open, result, MORPH_CLOSE, morphKernel);
-
+//        Mat morphKernel = getStructuringElement(MORPH_RECT, new Size(3, 2));
+//        morphologyEx(source, result, MORPH_CLOSE, morphKernel);
         return result;
     }
 
-    public IplImage convToGray(IplImage src) {
-        CvSize dim = new CvSize(src.width(), src.height());
-        IplImage dst = IplImage.create(dim, src.depth(), 1);
-        cvCvtColor(src, dst, CV_BGR2GRAY);
-        return dst;
+    public SuspectsList findMser(Mat image) {
+        ImageUtils.show(image, "BeforeMSER");
+        shapes = new IplImage(image);
+
+        SuspectsList list = new SuspectsList();
+
+        //TODO: need to tune this parameters
+        opencv_features2d.MSER mser = opencv_features2d.MSER.create(2, 50, 1000, 0.25, 0.2, 100, 1.01, 0.003, 5);
+
+        PointVectorVector kpvv = new PointVectorVector();
+        RectVectorExt rects = new RectVectorExt();
+        mser.detectRegions(image, kpvv, rects);
+        rects.sync();
+
+        for (int i = 0; i < rects.size() - 1; i++) {
+            for (int j = i + 1; j < rects.size(); j++) {
+
+                Rect r1 = rects.get(i);
+                Rect r2 = rects.get(j);
+                if (containing(r1, r2)) {
+                    //TODO: implement contours processing for cases of intersection and nesting
+                } else if (rectsIntersect(r1, r2)) {
+                    //TODO: see above
+                }
+            }
+        }
+
+        int i = 0;
+        for (Rect rect : rects.getRectList()) {
+            i++;
+            cropAndStore(image, rect, i);
+        }
+
+        ImageUtils.show(shapes, "MSER");
+        return list;
     }
 
-    public void showImage(IplImage toShow, String windowTitle) {
-        final CanvasFrame canvas_bin = new CanvasFrame(windowTitle);
-        canvas_bin.showImage(cvConverter.convert(toShow));
+    private void cropAndStore(Mat src, Rect rect, int i) {
+
+        cvRectangle(shapes,
+                cvPoint(rect.x(), rect.y()),
+                cvPoint(rect.x() + rect.width(), rect.y() + rect.height()),
+                cvScalar(0, 255, 0, 0), 1, 0, 0);
+
+        cvSetImageROI(shapes, cvRect(rect.x(), rect.y(), rect.width(), rect.height()));
+
+        if (SAVE_ON_DISK) {
+            cvSaveImage(CONTOURS_PATH + i + ".jpg", shapes);
+        }
+
+        Mat black = new Mat();
+        black.create(resizeY, resizeX, CV_8U);
+        Scalar sc0 = new Scalar(0);
+        for (int k = 0; k < black.rows(); k++) {
+            for (int j = 0; j < black.cols(); j++) {
+                black.put(sc0);
+            }
+        }
+
+        Rect result_rec = new Rect(cvGetImageROI(shapes));
+        Mat tmp = new Mat(src, result_rec);
+
+        if (rect.width() > resizeX) {
+            resize(tmp, tmp, new Size(resizeX, tmp.rows()), 0, 0, INTER_LINEAR);
+        }
+        if (rect.height() > resizeY) {
+            resize(tmp, tmp, new Size(tmp.cols(), resizeY), 0, 0, INTER_LINEAR);
+        }
+        int smallPictX = resizeX / 2 - tmp.cols() / 2;
+        int smallPictY = resizeY / 2 - tmp.rows() / 2;
+        tmp.copyTo(black.rowRange(smallPictY, (smallPictY + tmp.rows())).colRange(smallPictX, smallPictX + tmp.cols()));
+
+        if (SAVE_ON_DISK) {
+            imwrite(RESIZED_PATH + i + ".jpg", black);
+        }
+
+        imwrite(STORAGE_PATH + i + ".jpg", black);
+
+        cvResetImageROI(shapes);
+    }
+
+    private boolean rectsIntersect(Rect r1, Rect r2) {
+
+        if (r1.contains(r2.tl())
+                || r1.contains(r2.br())
+                || r2.contains(r1.tl())
+                || r2.contains(r1.br())) {
+            return true;
+        }
+        if (r1.x() >= r2.x() && r1.y() <= r2.y()) {
+            if (r1.x() + r1.width() <= r2.x() + r2.width()
+                    && r1.y() + r1.height() > r2.y() + r2.height()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    //TODO: fix and implement
+    private void joinContours(Rect r1, Rect r2) {
+        int tlXmin, brXmax, tlYmin, brYmax;
+
+        tlXmin = (r1.tl().x() < r2.tl().x()) ? r1.tl().x() : r2.tl().x();
+        tlYmin = (r1.tl().y() < r2.tl().y()) ? r1.tl().y() : r2.tl().y();
+        brXmax = (r1.br().x() > r2.br().x()) ? r1.br().x() : r2.br().x();
+        brYmax = (r1.br().y() > r2.br().y()) ? r1.br().y() : r2.br().y();
+        r1.tl().x(tlXmin).y(tlYmin);
+        r1.br().x(brXmax).y(brYmax);
+    }
+
+    private boolean containing(Rect outer, Rect inner) {
+        if (outer.contains(inner.tl()) && outer.contains(inner.br())) {
+            return true;
+        }
+        return false;
     }
 }
